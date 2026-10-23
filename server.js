@@ -65,30 +65,9 @@ app.post( '/login', async ( req, res ) => {
     }
 } ) ;
 
-// Middleware ฟังก์ชันสำหรับตรวจ Token
-const verifyToken = ( req, res, next ) => {
-    // 1. ขอดู Token จาก Headers ที่ผู้ใช้ส่งมา
-    const authHeader = req.headers[ 'authorization' ] ;
-
-    // รูปแบบที่ส่งมาจะเป็น "Bearer <token>" เราต้องตัดคำว่า Bearer ออกเอาแค่ตัว Token
-    const token = authHeader && authHeader.split( ' ' )[ 1 ] ;
-
-    // 2. ถ้าไม่มี Token ส่ง Status 401 กลับไป
-    if ( !token ) return res.status( 401 ).json( { message: "ท่านไม่มีสิทธิ์เข้า" } ) ;
-
-    // 3. อ่าน Token ว่าถูกต้องหรือหมดอายุไหม
-    jwt.verify( token, SECRET_KEY, ( err, decoded ) => {
-        // หาก Token ไม่ถูกต้องหรือหมดอายุ
-        if ( err ) return res.status( 403 ).json( { message: "ท่านไม่มีสิทธิ์เข้า" } ) ;
-
-        // หากถูกต้อง อนุญาตให้ทำคำสั่งถัดไปได้
-        req.user = decoded ; // จัดเก็บรหัส User ไว้เผื่อใช้
-        next() ;
-    } ) ;
-} ;
 
 // READ (GET): ขอดูงานทั้งหมด (ป้องกันด้วย verifyToken)
-app.get( '/tasks', verifyToken, async ( req, res ) => {
+app.get( '/tasks', async ( req, res ) => {
     try {
         const tasks = await Task.find() ;
         res.json( tasks ) ;
@@ -98,7 +77,7 @@ app.get( '/tasks', verifyToken, async ( req, res ) => {
 } ) ;
 
 // CREATE (POST): สร้างงานใหม่ (ป้องกันด้วย verifyToken)
-app.post( '/tasks', verifyToken, async ( req, res ) => {
+app.post( '/tasks', async ( req, res ) => {
     try {
         const newTask = new Task( {
             title: req.body.title,
@@ -112,7 +91,7 @@ app.post( '/tasks', verifyToken, async ( req, res ) => {
 } ) ;
 
 // UPDATE (PUT): แก้ไขสถานะงาน (ป้องกันด้วย verifyToken)
-app.put( '/tasks/:id', verifyToken, async ( req, res ) => {
+app.put( '/tasks/:id', async ( req, res ) => {
     try {
         // ค้นหางานด้วย _id
         const task = await Task.findById( req.params.id ) ;
@@ -135,7 +114,7 @@ app.put( '/tasks/:id', verifyToken, async ( req, res ) => {
 } ) ;
 
 // DELETE (ลบงาน): ป้องกันด้วย verifyToken
-app.delete( '/tasks/:id', verifyToken, async ( req, res ) => {
+app.delete( '/tasks/:id', async ( req, res ) => {
     try {
         // คำสั่งเดียวจบ: ค้นหาด้วย _id แล้วลบทิ้งทันที
         const deletedTask = await Task.findByIdAndDelete( req.params.id ) ;
